@@ -185,7 +185,8 @@ contract SimpleEscrow is ReentrancyGuard, Ownable {
 
         // Transfer payment to provider
         if (e.token == address(0)) {
-            payable(e.provider).transfer(payout);
+            (bool success, ) = payable(e.provider).call{value: payout}("");
+            require(success, "Transfer failed");
         } else {
             IERC20(e.token).safeTransfer(e.provider, payout);
         }
@@ -233,7 +234,8 @@ contract SimpleEscrow is ReentrancyGuard, Ownable {
             e.completedAt = block.timestamp;
 
             if (e.token == address(0)) {
-                payable(e.provider).transfer(payout);
+                (bool success, ) = payable(e.provider).call{value: payout}("");
+            require(success, "Transfer failed");
             } else {
                 IERC20(e.token).safeTransfer(e.provider, payout);
             }
@@ -242,13 +244,51 @@ contract SimpleEscrow is ReentrancyGuard, Ownable {
             e.status = EscrowStatus.Refunded;
 
             if (e.token == address(0)) {
-                payable(e.client).transfer(e.amount);
+                (bool success2, ) = payable(e.client).call{value: e.amount}("");
+            require(success2, "Transfer failed");
             } else {
                 IERC20(e.token).safeTransfer(e.client, e.amount);
             }
         }
 
         emit DisputeResolved(escrowId, winner);
+    }
+
+    // ============ Mutual Cancel ============
+
+    // Track cancel requests: escrowId => address => agreed
+    mapping(uint256 => mapping(address => bool)) public cancelAgreed;
+
+    event MutualCancelRequested(uint256 indexed escrowId, address indexed by);
+    event MutualCancelCompleted(uint256 indexed escrowId);
+
+    /**
+     * @notice Request mutual cancellation — both parties must agree
+     */
+    function requestMutualCancel(uint256 escrowId) external nonReentrant {
+        Escrow storage e = escrows[escrowId];
+        require(
+            msg.sender == e.client || msg.sender == e.provider,
+            "Not a party to this escrow"
+        );
+        require(e.status == EscrowStatus.Funded, "Escrow not in funded state");
+
+        cancelAgreed[escrowId][msg.sender] = true;
+        emit MutualCancelRequested(escrowId, msg.sender);
+
+        // If both parties agreed, refund client
+        if (cancelAgreed[escrowId][e.client] && cancelAgreed[escrowId][e.provider]) {
+            e.status = EscrowStatus.Cancelled;
+
+            if (e.token == address(0)) {
+                (bool success, ) = payable(e.client).call{value: e.amount}("");
+                require(success, "Refund failed");
+            } else {
+                IERC20(e.token).safeTransfer(e.client, e.amount);
+            }
+
+            emit MutualCancelCompleted(escrowId);
+        }
     }
 
     // ============ Refund & Cancel ============
@@ -265,7 +305,8 @@ contract SimpleEscrow is ReentrancyGuard, Ownable {
         e.status = EscrowStatus.Refunded;
 
         if (e.token == address(0)) {
-            payable(e.client).transfer(e.amount);
+            (bool success2, ) = payable(e.client).call{value: e.amount}("");
+            require(success2, "Transfer failed");
         } else {
             IERC20(e.token).safeTransfer(e.client, e.amount);
         }
@@ -293,7 +334,8 @@ contract SimpleEscrow is ReentrancyGuard, Ownable {
         collectedFees[token] = 0;
 
         if (token == address(0)) {
-            payable(owner()).transfer(amount);
+            (bool success, ) = payable(owner()).call{value: amount}("");
+            require(success, "Transfer failed");
         } else {
             IERC20(token).safeTransfer(owner(), amount);
         }

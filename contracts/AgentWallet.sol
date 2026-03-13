@@ -126,7 +126,8 @@ contract AgentWallet is ReentrancyGuard {
         require(dailySpent + amount <= dailyLimit, "Exceeds daily limit");
 
         dailySpent += amount;
-        to.transfer(amount);
+        (bool success, ) = to.call{value: amount}("");
+        require(success, "Transfer failed");
 
         emit Withdrawn(to, amount, reason);
     }
@@ -166,7 +167,8 @@ contract AgentWallet is ReentrancyGuard {
         nonReentrant
     {
         require(address(this).balance >= amount, "Insufficient balance");
-        to.transfer(amount);
+        (bool success, ) = to.call{value: amount}("");
+        require(success, "Transfer failed");
         emit Withdrawn(to, amount, "owner_withdraw");
     }
 

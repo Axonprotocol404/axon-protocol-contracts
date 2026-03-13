@@ -4,17 +4,13 @@ pragma solidity ^0.8.20;
 import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
 import "@openzeppelin/contracts/token/ERC721/extensions/ERC721Enumerable.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
-import "@openzeppelin/contracts/utils/Counters.sol";
-
 /**
  * @title AgentRegistry
  * @notice AXON Protocol — On-chain identity for AI agents
  * @dev Each AI agent gets a unique ERC-721 NFT as their identity
  */
 contract AgentRegistry is ERC721, ERC721Enumerable, Ownable {
-    using Counters for Counters.Counter;
-
-    Counters.Counter private _agentIdCounter;
+    uint256 private _nextAgentId = 1;
 
     // Registration fee (can be updated by owner)
     uint256 public registrationFee = 0.001 ether;
@@ -47,6 +43,9 @@ contract AgentRegistry is ERC721, ERC721Enumerable, Ownable {
 
     // operator address => agentId (reverse lookup)
     mapping(address => uint256) public operatorToAgent;
+
+    // track if operator is assigned (since agentId 0 is default)
+    mapping(address => bool) public hasOperator;
 
     // Events
     event AgentRegistered(
@@ -82,10 +81,10 @@ contract AgentRegistry is ERC721, ERC721Enumerable, Ownable {
         require(msg.value >= registrationFee, "Insufficient registration fee");
         require(bytes(name).length > 0, "Name cannot be empty");
         require(operator != address(0), "Invalid operator address");
-        require(operatorToAgent[operator] == 0, "Operator already assigned to an agent");
+        require(!hasOperator[operator], "Operator already assigned to an agent");
 
-        _agentIdCounter.increment();
-        uint256 newAgentId = _agentIdCounter.current();
+        uint256 newAgentId = _nextAgentId++;
+
 
         // Mint NFT to the caller (owner of the agent)
         _safeMint(msg.sender, newAgentId);
@@ -104,10 +103,12 @@ contract AgentRegistry is ERC721, ERC721Enumerable, Ownable {
 
         // Map operator to agent
         operatorToAgent[operator] = newAgentId;
+        hasOperator[operator] = true;
 
         // Refund excess payment
         if (msg.value > registrationFee) {
-            payable(msg.sender).transfer(msg.value - registrationFee);
+            (bool success, ) = payable(msg.sender).call{value: msg.value - registrationFee}("");
+            require(success, "Refund failed");
         }
 
         emit AgentRegistered(newAgentId, msg.sender, operator, name, agentType);
@@ -129,15 +130,17 @@ contract AgentRegistry is ERC721, ERC721Enumerable, Ownable {
     function changeOperator(uint256 agentId, address newOperator) external {
         require(ownerOf(agentId) == msg.sender, "Not agent owner");
         require(newOperator != address(0), "Invalid operator");
-        require(operatorToAgent[newOperator] == 0, "Operator already assigned");
+        require(!hasOperator[newOperator], "Operator already assigned");
 
         // Remove old mapping
         address oldOperator = agents[agentId].operator;
         delete operatorToAgent[oldOperator];
+        hasOperator[oldOperator] = false;
 
         // Set new operator
         agents[agentId].operator = newOperator;
         operatorToAgent[newOperator] = agentId;
+        hasOperator[newOperator] = true;
 
         emit OperatorChanged(agentId, newOperator);
     }
@@ -194,7 +197,8 @@ contract AgentRegistry is ERC721, ERC721Enumerable, Ownable {
     function withdrawFees() external onlyOwner {
         uint256 balance = address(this).balance;
         require(balance > 0, "No fees to withdraw");
-        payable(owner()).transfer(balance);
+        (bool success, ) = payable(owner()).call{value: balance}("");
+        require(success, "Withdraw failed");
     }
 
     // ============ View Functions ============
@@ -225,7 +229,7 @@ contract AgentRegistry is ERC721, ERC721Enumerable, Ownable {
      * @notice Get total registered agents
      */
     function totalAgents() external view returns (uint256) {
-        return _agentIdCounter.current();
+        return _nextAgentId - 1;
     }
 
     /**
