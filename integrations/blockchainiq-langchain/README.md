@@ -11,7 +11,7 @@ LangChain tools for the [Blockchain IQ](https://www.blockchainiq.co/agents) x402
 ## Install
 
 ```bash
-git clone https://github.com/Axonprotocol404/axon-blockchainiq-langchain && cd axon-blockchainiq-langchain
+git clone https://github.com/Axonprotocol404/axon-protocol-contracts && cd axon-protocol-contracts/integrations/blockchainiq-langchain
 npm install
 ```
 
