@@ -5,7 +5,8 @@ async function main() {
   console.log("Deploying with:", deployer.address);
   
   const balance = await hre.ethers.provider.getBalance(deployer.address);
-  console.log("Balance:", hre.ethers.formatEther(balance), "ETH\n");
+  console.log("Network:", hre.network.name, "chainId", (await hre.ethers.provider.getNetwork()).chainId.toString());
+  console.log("Balance:", hre.ethers.formatEther(balance), "(native)\n");
 
   // 1. Deploy AgentRegistry
   console.log("Deploying AgentRegistry...");
@@ -31,7 +32,7 @@ async function main() {
   const escrowAddr = await escrow.getAddress();
   console.log("✅ SimpleEscrow:", escrowAddr);
 
-  console.log("\n🚀 AXON Protocol — Base Sepolia Testnet");
+  console.log(`\n🚀 AXON Protocol — ${hre.network.name}`);
   console.log("AgentRegistry:", registryAddr);
   console.log("WalletFactory:", factoryAddr);
   console.log("SimpleEscrow: ", escrowAddr);
