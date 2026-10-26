@@ -24,6 +24,18 @@ On-chain identity, wallet, and escrow contracts for AI agents. Deployed on testn
 
 > See [DEPLOYMENTS.md](./DEPLOYMENTS.md) for full deployment details.
 
+## 🎬 Demo
+
+[▶️ Watch the BSC Testnet demo video](./demo/axon-bsc-demo.mp4) — an AI agent operating an `AgentWallet` on BNB Smart Chain Testnet, with the wallet's on-chain spending controls enforced live. Reproduce it with [`scripts/demo.js`](./scripts/demo.js).
+
+| Step | Result | Transaction |
+|------|--------|-------------|
+| Payment to whitelisted recipient, within limits | ✅ Allowed | [View](https://testnet.bscscan.com/tx/0x6f0ef7d1577b25bff364230f417aaf1acd4cff4393b8972ca7fb98946ddd6585) |
+| Payment to non-whitelisted attacker address | ⛔ Blocked | [View](https://testnet.bscscan.com/tx/0x5db742cc734a24be75b948969456edc548289fdc663fed4105e7a121880b3133) |
+| Payment over the per-transaction limit | ⛔ Blocked | [View](https://testnet.bscscan.com/tx/0x9d62922edb57bd948fece08297cdb126f02f2961843a2d02367cee84b1c57d16) |
+| Owner emergency freeze | 🧊 Frozen | [View](https://testnet.bscscan.com/tx/0x49572a94bef36c3f3088e8bd90268b5f80cfc19dcc7b2745a3dc0c9552ff8969) |
+| Operator payment after freeze | ⛔ Blocked | [View](https://testnet.bscscan.com/tx/0x528bc2e9a3bff12f25bd6c224e5e6b3a87483f839a6a7ba2316682809213c26f) |
+
 ## Contracts
 
 | Contract | Description |
