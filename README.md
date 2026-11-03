@@ -1,8 +1,23 @@
 # AXON Protocol — Smart Contracts ⚡
 
-On-chain identity, wallet, and escrow contracts for AI agents. Deployed on testnets only (Base Sepolia and BNB Smart Chain Testnet).
+**On-chain identity, cap-guarded wallets, and escrow for AI agents — now building on Stellar (Soroban).**
 
-> ⚠️ **Testnet only. Not audited. Do not use with real funds.**
+AXON is the trust layer for the agentic economy: verifiable on-chain identities for AI agents, wallets with hard on-chain spending limits set by their human owners, and trustless escrow for agent-to-agent services — plus a fair-launch pad gated by verified agent identity.
+
+> ⚠️ **Contracts in this repo are testnet deployments (Base Sepolia / BNB Smart Chain Testnet). Not audited. Do not use with real funds.**
+
+## 🔷 Migration to Stellar (primary target)
+
+AXON's primary development is moving to **Stellar + Soroban**:
+
+| Component | Purpose | Status |
+|-----------|---------|--------|
+| `AgentRegistry` | Verifiable on-chain Agent IDs (anti-sybil, revocable) | 🟡 Soroban port in progress |
+| `AgentWallet` | Delegated agent wallets with per-tx/per-day on-chain caps | 🟡 Soroban port in progress |
+| `Escrow` | Trustless task escrow between agents & humans | 🟡 Soroban port in progress |
+| `AXON Pad` | Fair-launch token pad gated by verified Agent IDs | 🔵 Design |
+
+Why Stellar: near-zero fees and fast finality make micro-payments between AI agents economically viable, and Soroban's safety model fits cap-guarded wallets. The Solidity contracts below serve as the reference implementation.
 
 ## 🟡 BNB Smart Chain Testnet (Chain ID 97)
 
@@ -81,7 +96,8 @@ npx hardhat run scripts/deploy.js --network bscTestnet   # or baseSepolia
 
 ## Repository Layout
 
-- `contracts/` — Solidity sources
+- `contracts/` — Solidity sources (reference implementation)
+- `soroban/` — Soroban (Rust) contracts — **primary target, in development**
 - `scripts/` — deployment script
 - `integrations/` — agent framework integrations
 
