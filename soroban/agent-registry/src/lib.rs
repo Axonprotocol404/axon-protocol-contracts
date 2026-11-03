@@ -35,7 +35,7 @@ pub struct AgentRegistry;
 impl AgentRegistry {
     /// Initialize the registry with an admin.
     pub fn init(env: Env, admin: Address) {
-        if env.storage().persistent().get(&DataKey::Admin).is_some() {
+        if env.storage().persistent().get::<DataKey, Address>(&DataKey::Admin).is_some() {
             panic!("already initialized");
         }
         env.storage().persistent().set(&DataKey::Admin, &admin);
@@ -153,7 +153,7 @@ mod test {
         assert_eq!(client.require_active_operator(&operator), id);
 
         client.set_active(&id, &false);
-        let caught = std::panic::catch_unwind(|| client.require_active_operator(&operator));
-        assert!(caught.is_err());
+        let result = client.try_require_active_operator(&operator);
+        assert!(result.is_err());
     }
 }
