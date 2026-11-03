@@ -7,6 +7,8 @@
 //!
 //! Port of the Solidity AgentWallet. Milestone 1 for SCF #46. WIP — not audited.
 
+#![no_std]
+
 use soroban_sdk::{contract, contractimpl, contracttype, token, Address, Env, Map};
 
 #[contracttype]

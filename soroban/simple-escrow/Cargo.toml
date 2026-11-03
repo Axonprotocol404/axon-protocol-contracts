@@ -10,5 +10,8 @@ crate-type = ["cdylib", "rlib"]
 [dependencies]
 soroban-sdk = "22"
 
+[profile.release]
+overflow-checks = true
+
 [dev-dependencies]
 soroban-sdk = { version = "22", features = ["testutils"] }

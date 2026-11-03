@@ -5,6 +5,8 @@
 //!
 //! Milestone 1 target for SCF #46. Work in progress — not audited.
 
+#![no_std]
+
 use soroban_sdk::{contract, contractimpl, contracttype, Address, Env, String, Vec};
 
 #[contracttype]

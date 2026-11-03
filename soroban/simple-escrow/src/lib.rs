@@ -6,11 +6,14 @@
 //!
 //! Port of the Solidity SimpleEscrow. Milestone 2 for SCF #46. WIP — not audited.
 
+#![no_std]
+
 use soroban_sdk::{contract, contractimpl, contracttype, token, Address, Env};
 
 #[contracttype]
-#[derive(Clone, Debug, Eq, PartialEq)]
+#[derive(Clone, Debug, Eq, PartialEq, Default)]
 pub enum EscrowState {
+    #[default]
     Open,        // funded, waiting for release/cancel
     Released,    // paid out to provider
     Cancelled,   // refunded to client
