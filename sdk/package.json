@@ -1,0 +1,15 @@
+{
+  "name": "@axon-protocol/sdk",
+  "version": "0.1.0",
+  "description": "AXON Protocol JS SDK — agent identity, cap-guarded wallets & escrow on Stellar (Soroban)",
+  "main": "src/index.js",
+  "type": "module",
+  "scripts": {
+    "test": "node --test test/"
+  },
+  "keywords": ["stellar", "soroban", "ai-agents", "escrow", "identity"],
+  "license": "MIT",
+  "dependencies": {
+    "@stellar/stellar-sdk": "^13.0.0"
+  }
+}
