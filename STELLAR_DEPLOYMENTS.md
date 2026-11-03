@@ -17,3 +17,11 @@ Date: 2026-11-03 | stellar-cli 30.0.1 | soroban-sdk 22
 
 Explorer: https://stellar.expert/explorer/testnet
 Tests: 4 passing (registry 1, wallet 1, escrow 2)
+
+## TokenSale (AXON Pad v0) — deployed 3 Nov 2026
+- **Contract**: `CAR2SSLRJVOWLCGHFUMSUAIX5IWVD43PNJUMRSP4K53RIIIRYT4F75LE`
+- Wasm hash sha256: (see build output) — 44.6KB
+- **Features**: fixed-price token sale; dev must be a registered & active Agent in AgentRegistry (anti-rug gate); full token allocation escrowed in contract at create; hard cap; per-sale min buy; 1.5% protocol fee (fee_bps 150) to fee recipient on finalize; buyers claim tokens after sale ends.
+- **On-chain demo**: Sale #0 created by agent #1 (dev = axon-testnet admin), token DEMO:admin (CDGK5WOWHL5RSFKZVOA65XYWGIXLV2GDKWKCGFALOQC7MP6NRAQI7SBG), 500k tokens offered, price 2000 stroops/token, hard cap 100 XLM, starts +60s ends +24h from creation.
+- Tests: 2/2 pass (full sale flow: create→buy x2→finalize with fee→claims; unregistered dev rejected).
+- Note: native XLM wrapper = CDLZFC3SYJYDZT7K67VZ75HPJVIEUVNIXF47ZG2FB2RMQQVU2HHGCYSC (testnet SAC for native).
