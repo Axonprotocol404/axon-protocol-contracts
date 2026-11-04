@@ -4,20 +4,24 @@
 
 AXON is the trust layer for the agentic economy: verifiable on-chain identities for AI agents, wallets with hard on-chain spending limits set by their human owners, and trustless escrow for agent-to-agent services — plus a fair-launch pad gated by verified agent identity.
 
-> ⚠️ **Contracts in this repo are testnet deployments (Base Sepolia / BNB Smart Chain Testnet). Not audited. Do not use with real funds.**
+> ⚠️ **Contracts in this repo are testnet deployments (Stellar Testnet primary; Base Sepolia / BSC Testnet = earlier EVM prototypes). Not audited. Do not use with real funds.**
 
-## 🔷 Migration to Stellar (primary target)
+## ⚡ Stellar Testnet (PRIMARY — live)
 
-AXON's primary development is moving to **Stellar + Soroban**:
+All four core contracts are deployed and unit-tested on Stellar testnet (Soroban):
 
-| Component | Purpose | Status |
-|-----------|---------|--------|
-| `AgentRegistry` | Verifiable on-chain Agent IDs (anti-sybil, revocable) | 🟡 Soroban port in progress |
-| `AgentWallet` | Delegated agent wallets with per-tx/per-day on-chain caps | 🟡 Soroban port in progress |
-| `Escrow` | Trustless task escrow between agents & humans | 🟡 Soroban port in progress |
-| `AXON Pad` | Fair-launch token pad gated by verified Agent IDs | 🔵 Design |
+| Contract | Address | Tests | Notes |
+|----------|---------|-------|-------|
+| `AgentRegistry` | `CDLTKHIAAQPMJMGRGCUMVDSVWO672OSW3KEHUPEV5GFN3UXVCMIAHTFN` | ✅ | Agent #1 registered on-chain (tx 444bfa6d…) |
+| `AgentWallet` | `CB3RBWCQIC3WTEDMDAWQMVZGUBP7SP53HXF5RKI55USVCA4PB765WHMM` | ✅ | per-tx caps, 24h daily window, whitelist, freeze |
+| `SimpleEscrow` | `CBT52U22SJW357F6Y3FGP3GY7IA4BT3XNLUKFSRAPEC732F425ALRL6L` | ✅ 2/2 | 0.3% protocol fee, mutual cancel |
+| `TokenSale` (AXON Pad v0) | `CAR2SSLRJVOWLCGHFUMSUAIX5IWVD43PNJUMRSP4K53RIIIRYT4F75LE` | ✅ 2/2 | dev identity gate via cross-contract call; demo Sale #0 live |
 
-Why Stellar: near-zero fees and fast finality make micro-payments between AI agents economically viable, and Soroban's safety model fits cap-guarded wallets. The Solidity contracts below serve as the reference implementation.
+**AXON Pad v0 anti-rug design:** `create_sale()` calls `AgentRegistry.agents_of()` + `get_agent()` — an unregistered or inactive dev cannot open a sale, and the full token allocation is escrowed inside the contract before the sale opens.
+
+JS SDK: [`sdk/`](./sdk) — live-tested against testnet (agent reads, sale reads, tx builders).
+
+Why Stellar: near-zero fees make micro-payments between AI agents economically viable, and Soroban's safety model fits cap-guarded wallets. The Solidity contracts below are the earlier reference implementation (EVM prototypes).
 
 ## 🟡 BNB Smart Chain Testnet (Chain ID 97)
 
@@ -97,7 +101,8 @@ npx hardhat run scripts/deploy.js --network bscTestnet   # or baseSepolia
 ## Repository Layout
 
 - `contracts/` — Solidity sources (reference implementation)
-- `soroban/` — Soroban (Rust) contracts — **primary target, in development**
+- `soroban/` — Soroban (Rust) contracts — **primary target, live on testnet**
+- `sdk/` — `@axon-protocol/sdk` JS client (registry, escrow, token sale)
 - `scripts/` — deployment script
 - `integrations/` — agent framework integrations
 
@@ -111,7 +116,6 @@ npx hardhat run scripts/deploy.js --network bscTestnet   # or baseSepolia
 - 📄 Litepaper: [axonprotocol.site/litepaper.html](https://axonprotocol.site/litepaper.html)
 - 🐦 X/Twitter: [@Axon_Protocol](https://x.com/Axon_Protocol)
 - 📱 Telegram: [@axon_protocol](https://t.me/axon_protocol)
-- 🪂 Airdrop: [Zealy](https://zealy.io/cw/axonprotocol)
 
 ---
 
