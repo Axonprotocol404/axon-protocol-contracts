@@ -22,11 +22,13 @@ const {
   scValToNative,
   TransactionBuilder,
   Address,
+  xdr,
 } = pkg;
 
 export const TESTNET_CONTRACTS = {
   registry: "CDLTKHIAAQPMJMGRGCUMVDSVWO672OSW3KEHUPEV5GFN3UXVCMIAHTFN",
   escrow: "CBT52U22SJW357F6Y3FGP3GY7IA4BT3XNLUKFSRAPEC732F425ALRL6L",
+  tokenSale: "CAR2SSLRJVOWLCGHFUMSUAIX5IWVD43PNJUMRSP4K53RIIIRYT4F75LE",
 };
 
 const NETWORKS_MAP = {
@@ -58,6 +60,8 @@ export class AxonClient {
     this.escrowId = opts.escrow ?? (this.network === "testnet" ? TESTNET_CONTRACTS.escrow : undefined);
     if (this.registryId) this.registry = new Contract(this.registryId);
     if (this.escrowId) this.escrow = new Contract(this.escrowId);
+    this.tokenSaleId = opts.tokenSale ?? (this.network === "testnet" ? TESTNET_CONTRACTS.tokenSale : undefined);
+    if (this.tokenSaleId) this.tokenSale = new Contract(this.tokenSaleId);
   }
 
   // ---------- helpers ----------
@@ -184,6 +188,48 @@ export class AxonClient {
   getEscrow(escrowId) {
     return this._read(this.escrow, "get_escrow", [this._u64(escrowId)]);
   }
+  // ---------- TokenSale (AXON Pad v0) ----------
+
+
+  // read-only: get sale struct
+  async getSale(saleId) {
+    return this._read(this.tokenSale, 'get_sale', [nativeToScVal(BigInt(saleId), { type: 'u64' })]);
+  }
+
+  async saleCount() {
+    return this._read(this.tokenSale, 'sale_count', []);
+  }
+
+  async getPurchase(saleId, buyer) {
+    const args = [nativeToScVal(BigInt(saleId), { type: 'u64' }), new Address(buyer).toScVal()];
+    return this._read(this.tokenSale, 'get_purchase', args);
+  }
+
+  // tx builders (return built XDR for wallet signing — no key handling here)
+  async buildCreateSaleTx({ devKeypair, token, tokenAmount, price, hardCap, minBuy, startsAt, endsAt }) {
+    const contract = this._saleContract();
+    const params = [
+      new xdr.Address(devKeypair.publicKey()).toScVal(),
+      new xdr.Address(token).toScVal(),
+      nativeToScVal(BigInt(tokenAmount), { type: 'i128' }),
+      nativeToScVal(BigInt(price), { type: 'i128' }),
+      nativeToScVal(BigInt(hardCap), { type: 'i128' }),
+      nativeToScVal(BigInt(minBuy), { type: 'i128' }),
+      nativeToScVal(startsAt, { type: 'u64' }),
+      nativeToScVal(endsAt, { type: 'u64' }),
+    ];
+    const account = await this.server.getAccount(devKeypair.publicKey());
+    const tx = new TransactionBuilder(account, {
+      fee: '100000', networkPassphrase: this.networkPassphrase,
+    })
+      .addOperation(Operation.invokeContractFunction({
+        contract, function: 'create_sale', args: params,
+      }))
+      .setTimeout(60).build();
+    tx.sign(devKeypair);
+    return tx.toXDR();
+  }
+
 }
 
 export default AxonClient;
