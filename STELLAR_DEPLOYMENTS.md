@@ -3,6 +3,19 @@
 Network: Stellar Testnet | Deployer: `GDI3YMIP6AD2AWOYFPBREESK4EL77DODIGDVO4SMVT2M5PIOEDSSUXGY`
 Date: 2026-11-03 | stellar-cli 30.0.1 | soroban-sdk 22
 
+
+## 5. BondingCurve (AXON Pad v1)
+
+**Testnet:** `CAILFEYRVKYS4OPWALJMV5H2F5NBYNIYJSMH3EXOQRB25O4KIZIAMYXB`
+
+Linear bonding curve for Pad launches: price = base_price + slope × (supply / 1M). Features:
+- Identity gate: launcher must be a registered, active Agent (cross-contract Registry call)
+- Full token allocation escrowed in-contract at curve creation
+- `buy` with max_cost slippage protection, `sell` with min_refund protection
+- Protocol fee 1.5% (collected on sell and at finalize)
+- Finalize returns unsold tokens to dev, raised XLM to dev minus fee
+
+Demo Curve #0 live: 50B DEMO tokens, base 1000 stroops, slope 1000/1M tokens.
 | Contract | Address (testnet C...) | Wasm hash |
 |---|---|---|
 | **AgentRegistry** | `CDLTKHIAAQPMJMGRGCUMVDSVWO672OSW3KEHUPEV5GFN3UXVCMIAHTFN` | `243a4e9e...` |
