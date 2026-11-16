@@ -38,6 +38,13 @@ optimized WASM (target wasm32v1-none).
 
 The website dashboard, AXON Pad pages and the JS SDK (`sdk/`) point at the v2 IDs.
 
+### AXON Pad v2 demo — Sale #0 & Curve #0 created (2026-11-16)
+
+- DEMO asset (v2): `DEMO:GCERUGIXWNNJJRD2GQGQYWB4IOXUX54N4MTQWLBRIH76LR4UMSHWG7YY` — dedicated demo issuer created 2026-11-16 (keypair held in the deployer workspace, testnet only). SAC: `CC4M2N7JHN5AVJQBS2DEMY5L7KNRBZYWXCMPPNBUAKIZF2JD2UKJVMG7` (SAC instance deployed, tx `31a789389cdf57013f02ae35bf631b2e409bc1db18a5b3834404322ecc30a56a`); 60B DEMO issued to the deployer/dev (issue tx `846ff8213319fd8d197812d19cb93737b0e597a051d586aadd2b477680a9bef3`).
+- **Sale #0** (TokenSale): created tx `0af6d571f3c236f6d7cf8ffd2eed2418e21f3143bf78ab802c8dddefce9ec724` — 500,000 DEMO escrowed in-contract, price 2000 stroops/token, hard cap 100 XLM, min buy 1 XLM, starts 2026-11-16 18:23 WIB, ends 2027-02-14 18:24 WIB. First buy: 1 XLM by the test provider (tx `7ee141bd1c4a6134ccabdd6efb4da51ba92b5f8fc704071b48f30a845f823abb`); `sale_count` = 1, raised = 1 XLM at verification.
+- **Curve #0** (BondingCurve): created tx `c97078f6469d296d66d0c304091a77c11bef119213ec31d3656d52e92395fd99` — 50B DEMO escrowed in-contract, base price 1000 stroops, slope 1000 per 1M tokens, ends 2027-02-14 18:24 WIB. First buy: 10,000 DEMO units for 1 XLM by the test provider (tx `5d226b6529d9de14d4640b9008537badf66dadd6c0b4179d41c4b08d2525873d`); `curve_count` = 1.
+- The website ticker ("Sale #0 OPEN" / "Curve #0 LIVE") is now backed by live v2 on-chain state.
+
 ---
 
 ## Previous deployment — v1 (2026-11-14, superseded)
