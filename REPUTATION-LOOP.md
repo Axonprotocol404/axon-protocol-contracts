@@ -1,6 +1,6 @@
 # Escrow → Registry Reputation Write-Back
 
-**Date:** 2026-11-16 · **Network:** Stellar testnet only · **Status:** code + tests delivered, NOT yet redeployed (see "Redeploy" below)
+**Date:** 2026-11-16 · **Network:** Stellar testnet only · **Status:** code + tests delivered, **redeployed to testnet 2026-11-16** (deployment v2 — see "Redeploy" below and `STELLAR_DEPLOYMENTS.md`)
 
 ## The gap
 
@@ -88,31 +88,25 @@ registry-side tests exercise the real `record_outcome` logic. A combined
 two-real-contracts integration test does not exist in this repo layout;
 the end-to-end check happens on testnet after redeploy (below).
 
-## Redeploy (testnet) — NOT done yet
+## Redeploy (testnet) — DONE 2026-11-16
 
-Not executed: this environment has no Rust/Soroban toolchain preinstalled
-and no deployer secret key or stellar-cli identity in the workspace, so
-there was nothing to deploy with. Needed to redeploy:
+Executed with a fresh agent-held deployer keypair
+(`GDT4KNR2MFOLIA3ENSV5MXIMRHOJX2VX22EC4QFZNKHNNQ532M5RJDZW`, created for AXON
+deployments; the v1 deployer account was not touched). All five contracts
+were redeployed (TokenSale/BondingCurve/AgentWallet point at the Registry,
+so they moved with it), wired, and verified:
 
-1. Rust toolchain + `stellar-cli` (deployments were last made with
-   stellar-cli 30.0.1, soroban-sdk 22).
-2. The deployer secret key for
-   `GDI3YMIP6AD2AWOYFPBREESK4EL77DODIGDVO4SMVT2M5PIOEDSSUXGY`
-   (testnet account, already funded).
-3. Build & deploy both contracts (Registry first, then Escrow), then wire:
-   - `escrow.init(admin, 30, <new registry address>)`
-   - `registry.set_recorder(<new escrow address>, true)`
-   - verify with `registry.is_recorder(<escrow address>) == true`
-4. End-to-end check on testnet: register an agent, open + release an
-   escrow with that agent as provider, confirm `get_agent` shows
-   `task_count = 1`, `reputation = 10`.
-5. Record the new contract IDs in `STELLAR_DEPLOYMENTS.md` and update the
-   dashboard/SDK address constants.
+- `escrow.init(admin, 30, <new registry>)` — done
+- `registry.set_recorder(<new escrow>, true)` — done; `is_recorder` reads `true`
+- End-to-end check passed on testnet: agent #1 registered, escrow of 5 XLM
+  opened + released (tx `6eeade6a88d4fa141e1478391cb7de04fd0e9c160789671fa2a89a160884b951`),
+  and `get_agent` read back `task_count = 1`, `reputation = 10`.
+- New contract IDs recorded in `STELLAR_DEPLOYMENTS.md` (deployment v2);
+  dashboard/SDK/website address constants updated to the v2 IDs.
 
-Until redeploy, the currently deployed testnet contracts
-(Registry `CDLTKHIAAQPMJMGRGCUMVDSVWO672OSW3KEHUPEV5GFN3UXVCMIAHTFN`,
-Escrow `CBT52U22SJW357F6Y3FGP3GY7IA4BT3XNLUKFSRAPEC732F425ALRL6L`) still run
-the old code without the write-back.
+The v1 contracts (Registry `CDLTKHIAAQPMJMGRGCUMVDSVWO672OSW3KEHUPEV5GFN3UXVCMIAHTFN`,
+Escrow `CBT52U22SJW357F6Y3FGP3GY7IA4BT3XNLUKFSRAPEC732F425ALRL6L`) remain on-chain
+untouched, running the old code without the write-back.
 
 ## Remaining gaps
 
