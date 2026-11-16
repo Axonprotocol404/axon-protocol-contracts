@@ -28,7 +28,13 @@ pub enum DataKey {
     Agent(u64),           // agent_id -> Agent
     OwnerAgents(Address), // owner -> Vec<agent_id>
     Admin,
+    Recorder(Address),    // authorized outcome recorder (e.g. the Escrow contract)
 }
+
+/// Reputation earned per successfully completed task (escrow released).
+const REP_PER_COMPLETION: u32 = 10;
+/// Reputation lost per failed task (saturating at 0).
+const REP_FAILURE_PENALTY: u32 = 5;
 
 #[contract]
 pub struct AgentRegistry;
@@ -90,13 +96,61 @@ impl AgentRegistry {
         env.storage().persistent().set(&DataKey::Agent(agent_id), &agent);
     }
 
-    /// Admin updates reputation (later: moved to a reputation oracle/protocol).
+    /// Admin sets reputation directly (manual override / bootstrap).
+    /// Protocol contracts report outcomes via `record_outcome` instead.
     pub fn set_reputation(env: Env, agent_id: u64, reputation: u32) {
         let admin: Address = env.storage().persistent().get(&DataKey::Admin).unwrap();
         admin.require_auth();
         let mut agent = Self::_get(&env, agent_id);
         agent.reputation = reputation;
         env.storage().persistent().set(&DataKey::Agent(agent_id), &agent);
+    }
+
+    /// Admin authorizes (or revokes) a contract that may report task
+    /// outcomes — e.g. the SimpleEscrow contract. This is the only path by
+    /// which escrow results reach an agent's reputation / task count.
+    pub fn set_recorder(env: Env, recorder: Address, authorized: bool) {
+        let admin: Address = env.storage().persistent().get(&DataKey::Admin).unwrap();
+        admin.require_auth();
+        if authorized {
+            env.storage().persistent().set(&DataKey::Recorder(recorder), &true);
+        } else {
+            env.storage().persistent().remove(&DataKey::Recorder(recorder));
+        }
+    }
+
+    /// Record the outcome of a task performed by `operator`.
+    ///
+    /// Caller must be an authorized recorder (see `set_recorder`) and must
+    /// authorize the call — for a recorder contract, being the invoker of
+    /// this call is its authorization, so reputation cannot be forged by
+    /// third parties. On success the agent gains `REP_PER_COMPLETION`
+    /// reputation; on failure it loses `REP_FAILURE_PENALTY` (floor 0).
+    /// Either way `task_count` increments. Returns false (no state change)
+    /// when `operator` is not a registered agent, so callers such as the
+    /// escrow can settle payments to unregistered providers without
+    /// reverting.
+    pub fn record_outcome(env: Env, recorder: Address, operator: Address, success: bool) -> bool {
+        if !env.storage().persistent().has(&DataKey::Recorder(recorder.clone())) {
+            panic!("recorder not authorized");
+        }
+        recorder.require_auth();
+
+        let next: u64 = env.storage().persistent().get(&DataKey::NextId).unwrap_or(1);
+        for id in 1..next {
+            let mut agent = Self::_get(&env, id);
+            if agent.operator == operator {
+                agent.task_count += 1;
+                agent.reputation = if success {
+                    agent.reputation.saturating_add(REP_PER_COMPLETION)
+                } else {
+                    agent.reputation.saturating_sub(REP_FAILURE_PENALTY)
+                };
+                env.storage().persistent().set(&DataKey::Agent(id), &agent);
+                return true;
+            }
+        }
+        false
     }
 
     /// Views
@@ -109,6 +163,10 @@ impl AgentRegistry {
             .persistent()
             .get(&DataKey::OwnerAgents(owner))
             .unwrap_or(Vec::new(&env))
+    }
+
+    pub fn is_recorder(env: Env, recorder: Address) -> bool {
+        env.storage().persistent().has(&DataKey::Recorder(recorder))
     }
 
     /// Gate used by other AXON contracts (wallet factory, escrow, pad):
@@ -157,5 +215,94 @@ mod test {
         client.set_active(&id, &false);
         let result = client.try_require_active_operator(&operator);
         assert!(result.is_err());
+    }
+
+    /// Setup helper: registry with one registered agent and one authorized
+    /// recorder (a stand-in address for the Escrow contract). Returns
+    /// (env, contract_id, agent_id, operator, recorder).
+    fn setup() -> (Env, Address, u64, Address, Address) {
+        let env = Env::default();
+        let contract_id = env.register(AgentRegistry, ());
+        let client = AgentRegistryClient::new(&env, &contract_id);
+
+        let admin = Address::generate(&env);
+        let owner = Address::generate(&env);
+        let operator = Address::generate(&env);
+        let recorder = Address::generate(&env);
+
+        client.init(&admin);
+        env.mock_all_auths();
+        let id = client.register(&owner, &operator, &String::from_str(&env, "ipfs://agent1"));
+        client.set_recorder(&recorder, &true);
+        (env, contract_id, id, operator, recorder)
+    }
+
+    #[test]
+    fn record_outcome_success_updates_reputation_and_count() {
+        let (env, contract_id, id, operator, recorder) = setup();
+        let client = AgentRegistryClient::new(&env, &contract_id);
+
+        assert!(client.record_outcome(&recorder, &operator, &true));
+        let agent = client.get_agent(&id);
+        assert_eq!(agent.task_count, 1);
+        assert_eq!(agent.reputation, REP_PER_COMPLETION);
+
+        assert!(client.record_outcome(&recorder, &operator, &true));
+        let agent = client.get_agent(&id);
+        assert_eq!(agent.task_count, 2);
+        assert_eq!(agent.reputation, 2 * REP_PER_COMPLETION);
+    }
+
+    #[test]
+    fn record_outcome_failure_penalizes_and_saturates() {
+        let (env, contract_id, id, operator, recorder) = setup();
+        let client = AgentRegistryClient::new(&env, &contract_id);
+
+        // failure at reputation 0: stays 0, but the task still counts
+        assert!(client.record_outcome(&recorder, &operator, &false));
+        let agent = client.get_agent(&id);
+        assert_eq!(agent.task_count, 1);
+        assert_eq!(agent.reputation, 0);
+
+        // success then failure: +10 then -5
+        assert!(client.record_outcome(&recorder, &operator, &true));
+        assert!(client.record_outcome(&recorder, &operator, &false));
+        let agent = client.get_agent(&id);
+        assert_eq!(agent.task_count, 3);
+        assert_eq!(agent.reputation, REP_PER_COMPLETION - REP_FAILURE_PENALTY);
+    }
+
+    #[test]
+    fn record_outcome_rejects_unauthorized_recorder() {
+        let (env, contract_id, id, operator, recorder) = setup();
+        let client = AgentRegistryClient::new(&env, &contract_id);
+        let stranger = Address::generate(&env);
+
+        // never authorized
+        assert!(client.try_record_outcome(&stranger, &operator, &true).is_err());
+
+        // authorized, then revoked
+        assert!(client.is_recorder(&recorder));
+        client.set_recorder(&recorder, &false);
+        assert!(!client.is_recorder(&recorder));
+        assert!(client.try_record_outcome(&recorder, &operator, &true).is_err());
+
+        // no outcome was recorded through any of this
+        let agent = client.get_agent(&id);
+        assert_eq!(agent.task_count, 0);
+        assert_eq!(agent.reputation, 0);
+    }
+
+    #[test]
+    fn record_outcome_unknown_operator_is_noop() {
+        let (env, contract_id, id, _operator, recorder) = setup();
+        let client = AgentRegistryClient::new(&env, &contract_id);
+        let ghost = Address::generate(&env);
+
+        // unregistered operator: returns false, does not panic, no changes
+        assert!(!client.record_outcome(&recorder, &ghost, &true));
+        let agent = client.get_agent(&id);
+        assert_eq!(agent.task_count, 0);
+        assert_eq!(agent.reputation, 0);
     }
 }
