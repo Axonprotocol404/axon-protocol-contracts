@@ -11,3 +11,6 @@ soroban-sdk = "22"
 
 [dev-dependencies]
 soroban-sdk = { version = "22", features = ["testutils"] }
+
+[profile.release]
+overflow-checks = true
