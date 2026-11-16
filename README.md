@@ -8,14 +8,15 @@ AXON is the trust layer for the agentic economy: verifiable on-chain identities 
 
 ## ⚡ Stellar Testnet (PRIMARY — live)
 
-All four core contracts are deployed and unit-tested on Stellar testnet (Soroban):
+All five contracts are deployed and unit-tested on Stellar testnet (Soroban) — current deployment v2 (2026-11-16, see `STELLAR_DEPLOYMENTS.md`):
 
 | Contract | Address | Tests | Notes |
 |----------|---------|-------|-------|
-| `AgentRegistry` | `CDLTKHIAAQPMJMGRGCUMVDSVWO672OSW3KEHUPEV5GFN3UXVCMIAHTFN` | ✅ | Agent #1 registered on-chain (tx 444bfa6d…) |
-| `AgentWallet` | `CB3RBWCQIC3WTEDMDAWQMVZGUBP7SP53HXF5RKI55USVCA4PB765WHMM` | ✅ | per-tx caps, 24h daily window, whitelist, freeze |
-| `SimpleEscrow` | `CBT52U22SJW357F6Y3FGP3GY7IA4BT3XNLUKFSRAPEC732F425ALRL6L` | ✅ 2/2 | 0.3% protocol fee, mutual cancel |
-| `TokenSale` (AXON Pad v0) | `CAR2SSLRJVOWLCGHFUMSUAIX5IWVD43PNJUMRSP4K53RIIIRYT4F75LE` | ✅ 2/2 | dev identity gate via cross-contract call; demo Sale #0 live |
+| `AgentRegistry` | `CBO6F574QSLONYNWHM5WG7U3ZE7R4ONZKKYLSTQYURB6VCOF7LM4OBMV` | ✅ 5/5 | escrow → Registry reputation loop live; smoke-test Agent #1 at reputation 10 / 1 task (release tx 6eeade6a…) |
+| `AgentWallet` | `CBNORTXZDKAULKEHSZCIZ7KSF3JUYI5LMPVFXX7FCDQQMFBFS22ZDI35` | ✅ 1/1 | per-tx caps, 24h daily window, whitelist, freeze |
+| `SimpleEscrow` | `CCJKMU7BPP5LWMQJZNYCATFWCAWZ5ZJNJEUNSNROZC534EGSOVRAGS6E` | ✅ 4/4 | 0.3% protocol fee, mutual cancel, records outcome to Registry on release |
+| `TokenSale` (AXON Pad v0) | `CCFRQY2IEBGROVPMK2MHKO35IJSSDYUEDTOHJJQPVFLZQFCQQPKARD5B` | ✅ 2/2 | dev identity gate via cross-contract call |
+| `BondingCurve` (AXON Pad) | `CAQKKZ7YDAGJFOKZVYISDLFMA3QC2LIE2GSS3SEBDDGX3A5BAPTMJMMM` | ✅ 2/2 | constant-product launch curve, identity-gated |
 
 **AXON Pad v0 anti-rug design:** `create_sale()` calls `AgentRegistry.agents_of()` + `get_agent()` — an unregistered or inactive dev cannot open a sale, and the full token allocation is escrowed inside the contract before the sale opens.
 
